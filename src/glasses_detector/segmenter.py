@@ -478,11 +478,22 @@ class GlassesSegmenter(BaseGlassesModel):
 
         if isinstance(f, dict) or (isinstance(f, str) and f not in {"mask", "img"}):
             # Apply torch transform if not mask or img
+            # format_fn = format
+            # format = lambda img, x: resize(
+            #     inpt=format_fn(x),
+            #     size=output_size if output_size else img.size,
+            # ).squeeze(0)
+
+            # torchvision.transforms.v2.functional.resize expects size as (H, W),
+            # while PIL's Image.size and the documented output_size are (W, H).
+            # Convert (W, H) -> (H, W) for tensor-based resizing.
             format_fn = format
-            format = lambda img, x: resize(
-                inpt=format_fn(x),
-                size=output_size if output_size else img.size,
-            ).squeeze(0)
+            format = (
+                lambda img, x: resize(
+                    inpt=format_fn(x),
+                    size=(output_size[1], output_size[0]) if output_size else (img.height, img.width),
+                ).squeeze(0)
+            )
 
         return super().predict(image, format, input_size)
 
